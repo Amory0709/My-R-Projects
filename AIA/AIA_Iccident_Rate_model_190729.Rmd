@@ -23,7 +23,7 @@ names(AIA_MOD_DATA)
 #check PlanOption_v2 if can delete
 table(AIA_MOD_DATA$PlanOption_v2)
 subset(AIA_MOD_DATA,is.na(AIA_MOD_DATA$PlanOption_v2))# 0 rows
-subset(AIA_MOD_DATA, AIA_MOD_DATA$PlanOption==AIA_MOD_DATA$PlanOption_v2)# 1051435
+subset(AIA_MOD_DATA, AIA_MOD_DATA$PlanOption==AIA_MOD_DATA$PlanOption_v2)# 1051435 
 
 testPlanOption <- subset(AIA_MOD_DATA, AIA_MOD_DATA$PlanOption!=AIA_MOD_DATA$PlanOption_v2)# 79645
 table(testPlanOption$PlanOption)
@@ -80,10 +80,10 @@ rm(testChangePlan2)
 AIA_noUSD$Deductible_Options <- as.factor(AIA_noUSD$Deductible_Options)
 
 # entry age LB
-table(AIA_noUSD$EntryAge_LB)
-AIA_noUSD$EntryAge_LB <- ifelse(AIA_noUSD$EntryAge_LB>=65, 65, as.integer(AIA_noUSD$EntryAge_LB))
-table(AIA_noUSD$EntryAge_LB)
-AIA_noUSD$EntryAge_LB<- as.factor(AIA_noUSD$EntryAge_LB)
+table(AIA_noUSD$AttainedAge_LB)
+AIA_noUSD$AttainedAge_LB <- ifelse(AIA_noUSD$AttainedAge_LB>=65, 65, as.integer(AIA_noUSD$AttainedAge_LB))
+table(AIA_noUSD$AttainedAge_LB)
+AIA_noUSD$AttainedAge_LB<- as.integer(AIA_noUSD$AttainedAge_LB)
 
 #Calendar Year
 table(AIA_noUSD$CalendarYear)
@@ -116,7 +116,7 @@ table(AIA_noUSD$PolicyProvince_v2)
 
 #HI_indicater
 table(AIA_noUSD$HI_Indicator)
-nrow(subset(AIA_noUSD, is.na(AIA_noUSD$HI_Indicator))) #33096
+nrow(subset(AIA_noUSD, is.na(AIA_noUSD$HI_Indicator))) #33107
 AIA_noUSD$HI_Indicator_v2 <- ifelse(is.na(AIA_noUSD$HI_Indicator),"NA",as.factor(AIA_noUSD$HI_Indicator))
 table(AIA_noUSD$HI_Indicator_v2)
 AIA_noUSD$HI_Indicator_v2 <- as.factor(AIA_noUSD$HI_Indicator_v2)
@@ -228,9 +228,9 @@ AIA_SUM =
                         #Smoking,
                         PlanOption_v2)]
 nrow(AIA_SUM)# 163141 with deductible_options
-# 152488
+# 152537
 names(AIA_SUM)
-#write.csv(AIA_SUM,'AIA_v3.csv')
+#write.csv(AIA_SUM,'AIA_RAW_DATA.csv')
 ```
 
 ## check target distribution
@@ -246,9 +246,9 @@ hist(log(AIA_SUM$CLAIM_CNT_SUM/AIA_SUM$Exposure_SUM))
 set.seed(1)
 train_id <- sample.int(n = nrow(AIA_SUM), size = floor(0.75*nrow(AIA_SUM)), replace = F)
 AIA_train <- AIA_SUM[train_id,] # 122355  with deductible_options
-#114366
+#114402
 AIA_test <- AIA_SUM[-train_id,] # 40786  with deductible_options
-#38122
+#38135
 ```
 
 
@@ -281,14 +281,14 @@ AIA_train$fitted.Value <- AIA.fit$fitted.values
 
 #check train data MSE
 mean((AIA.fit$fitted.values-AIA_train$CLAIM_CNT_SUM)^2)#  0.7473741 with deductible_options
-# 0.7715021
+# 0.8458295
 ```
 
 ```{r}
 # check predict data MSE
 AIA_test$Prediction <- predict(AIA.fit, newdata = AIA_test, type = "response")
 mean((AIA_test$Prediction - AIA_test$CLAIM_CNT_SUM)^2) #  0.7874016 with deductible_options
-# 0.9957291
+# 0.760566
 ```
 
 ## Step 4: cross validation
@@ -380,6 +380,8 @@ byDecile = CV_RESULT[,
                           by = ordered]
 byDecile = cbind(byDecile, AoE = byDecile$PREDICT / byDecile$EXPOSURE)
 byDecile = byDecile[order(byDecile$ordered)]
+
+write.csv(byDecile, file = 'Lift.csv')
 
 DecileBar =
   barplot(
